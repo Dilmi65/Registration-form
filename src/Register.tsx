@@ -1,4 +1,3 @@
-import { error } from 'console';
 import { useState } from 'react'
 import { useNavigate } from "react-router-dom";
 
@@ -20,6 +19,25 @@ function Register() {
     const [password, setPassword] = useState('')
 
     const handleSubmit = () => {
+        const newErrors = {
+            firstName: validateFirstname(firstName),
+            lastName: validateFirstname(lastName),   // last name ekatath ekama rule eka
+            email: validatemail(email),
+            nic: validateNIC(nic, dob, gender),
+            dob: validateDob(dob),
+            gender: "",     // gender validation liyapu passe danna
+            password: validatepassword(password)
+
+        };
+
+        setErrors(newErrors);
+
+        // Error ekak hari thiyenawa nam stop
+        const hasError = Object.values(newErrors).some((msg) => msg !== "");
+        if (hasError) {
+            return;
+        }
+
         localStorage.setItem("user", JSON.stringify({ name: firstName + " " + lastName, email: email }));
         navigate("/Home");
     }
@@ -68,13 +86,59 @@ function Register() {
         return "";
     }
 
-    const validateNIC = (value: string) => {
-        if (value.trim() === "") {
-            return "NIC is empty";
-        } else if (!/^\d{12}$/.test(value) && !/^\d{9}[VX]$/.test(value)) {
-            return "Invalid NIC format. Please enter a 12-digit number or a 9-digit number followed by 'V' or 'X'.";
-        } return "";
-    }
+    const validateNIC = (nic: string, dob: string, gender: string) => {
+        if (nic.trim() === "") {
+            return "NIC is required";
+        }
+
+        let nicYear = 0;
+        let dayPart = 0;
+
+        // 1. Format eka balanna, year saha day part eka ganna
+        if (/^\d{9}[VvXx]$/.test(nic)) {
+            nicYear = 1900 + Number(nic.substring(0, 2));
+            dayPart = Number(nic.substring(2, 5));
+        } else if (/^\d{12}$/.test(nic)) {
+            nicYear = Number(nic.substring(0, 4));
+            dayPart = Number(nic.substring(4, 7));
+        } else {
+            return "Invalid NIC format (9 digits + V, or 12 digits)";
+        }
+
+        // 2. Gender eka hoyanna
+        let nicGender = "Male";
+        let nicDay = dayPart;
+        if (dayPart > 500) {
+            nicGender = "Female";
+            nicDay = dayPart - 500;
+        }
+
+        if (nicDay < 1 || nicDay > 366) {
+            return "Invalid NIC: wrong birth day number";
+        }
+
+        // 3. DOB eka form eken ganna
+        if (dob === "" || gender === "") {
+            return "Enter date of birth and gender first";
+        }
+
+        const [y, m, d] = dob.split("-").map(Number);
+        const monthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]; // Feb = 29 hama welawema
+        let dobDay = d;
+        for (let i = 0; i < m - 1; i++) {
+            dobDay += monthDays[i];
+        }
+
+        // 4. Match karala balanna
+        if (nicYear !== y || nicDay !== dobDay) {
+            return "NIC does not match the date of birth";
+        }
+        if (nicGender !== gender) {
+            return "NIC does not match the gender";
+        }
+
+        return "";
+    };
 
     const validatepassword = (value: string) => {
         if (value.trim() === "") {
@@ -223,7 +287,7 @@ function Register() {
                             placeholder="199012345678 or 901234567V"
                             value={nic}
                             onChange={(e) => setNic(e.target.value)}
-                            onBlur={() => { setErrors({ ...errors, nic: validateNIC(nic) }) }}
+                            onBlur={() => { setErrors({ ...errors, nic: validateNIC(nic, dob, gender) }) }}
                             className={inputClass}
                         />
                         {errors.nic && (<p className="mt-1.5 text-xs text-red-500">
