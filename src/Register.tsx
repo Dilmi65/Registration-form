@@ -1,5 +1,5 @@
 import { useState } from 'react'
-
+import { useNavigate } from "react-router-dom";
 
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700'
 const inputClass =
@@ -8,6 +8,7 @@ const inputClass =
     'focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-600/15'
 
 function Register() {
+    const navigate = useNavigate();
     const [firstName, setFirstName] = useState('')
     const [lastName, setLastName] = useState('')
     const [dob, setDob] = useState('')
@@ -16,8 +17,9 @@ function Register() {
     const [nic, setNic] = useState('')
 
     // The button doesn't need to work yet, so we only stop the page from reloading
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault()
+    const handleSubmit = () => {
+        localStorage.setItem("user", JSON.stringify({ name: firstName + " " + lastName, email: email }));
+        navigate("/Home");
     }
 
     return (
@@ -133,7 +135,7 @@ function Register() {
                     </div>
 
                     {/* Register button */}
-                    <button
+                    <button onClick={handleSubmit}
                         type="submit"
                         className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-600/30 active:bg-indigo-800"
                     >

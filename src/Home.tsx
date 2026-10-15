@@ -1,6 +1,26 @@
-function home() {
+import { useNavigate } from "react-router-dom";
+
+function Home() {
+    const navigate = useNavigate();
+    const user = JSON.parse(localStorage.getItem("user") || '{}');
+
+    if (!user) {
+        navigate("/");
+    }
+
     return (
-        <h1>welcome to the home page</h1>
-    )
+        <div>
+            <h1>Welcome, {user.name}</h1>
+            <p>Email: {user.email}</p>
+
+            <button onClick={() => {
+                localStorage.removeItem("user");
+                navigate("/");
+            }}>
+                Logout
+            </button>
+        </div>
+    );
 }
-export default home 
+
+export default Home;
