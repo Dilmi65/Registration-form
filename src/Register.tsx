@@ -22,15 +22,26 @@ function Register() {
     const [nic, setNic] = useState('')
     const [password, setPassword] = useState('')
 
-    const handleSubmit = () => {
+    const API = import.meta.env.VITE_API_BASE_URL; // component eka ihalin
+
+    const [phone, setPhone] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+    const [apiError, setApiError] = useState("");
+
+
+
+    const handleSubmit = async () => {
         const newErrors = {
             firstName: validateFirstname(firstName),
-            lastName: validateFirstname(lastName),   // last name ekatath ekama rule eka
+            lastName: validateLastname(lastName),   // last name ekatath ekama rule eka
             email: validatemail(email),
             nic: validateNIC(nic, dob, gender),
             dob: validateDob(dob),
             gender: "",     // gender validation liyapu passe danna
-            password: validatepassword(password)
+            password: validatepassword(password),
+            confirmPassword: validateConfirmPassword(confirmPassword, password),
+            phone: validatePhone(phone)
 
         };
         setErrors(newErrors);
@@ -40,9 +51,46 @@ function Register() {
             return;
         }
 
-        localStorage.setItem("user", JSON.stringify({ name: firstName + " " + lastName, email: email, password: password }));
-        navigate("/Login");
-    }
+        setApiError("");
+        setLoading(true);
+
+        try {
+            const res = await fetch(`${API}/register`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({
+                    name: firstName + " " + lastName,
+                    email: email,
+                    dob: dob,
+                    phone: phone,
+                    nic: nic,
+                    password: password,
+                    password_confirmation: confirmPassword,
+                    username: firstName
+                }),
+            });
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                // 422 wage: "The email has already been taken." wage message eka
+                setApiError(data.message || "Registration failed");
+                return;
+            }
+
+            localStorage.setItem("token", data.token);
+            navigate("/");
+        } catch (err) {
+            console.log("Register error:", err);
+            setApiError("Network error. Please try again.");
+        } finally {
+            setLoading(false);
+        }
+    };
+
 
     //errors show karanna space ekak hadanawa meken 
     const [errors, setErrors] = useState({
@@ -52,7 +100,10 @@ function Register() {
         gender: "",
         email: "",
         nic: "",
-        password: ""
+        password: "",
+        phone: "",
+        confirmPassword: ""
+
     })
 
 
@@ -104,6 +155,15 @@ function Register() {
         }
         return "";
     }
+
+    const validatePhone = (value: string) => {
+        if (value.trim() === "") {
+            return "Phone number is empty";
+
+        }
+        return "";
+    }
+
 
     const validateNIC = (nic: string, dob: string, gender: string) => {
         if (nic.trim() === "") {
@@ -168,6 +228,11 @@ function Register() {
         return "";
     }
 
+    const validateConfirmPassword = (value: string, pw: string) => {
+        if (value === "") return "Please confirm your password";
+        if (value !== pw) return "Passwords do not match";
+        return "";
+    };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-slate-100 px-4 py-10">
@@ -183,7 +248,7 @@ function Register() {
                 </div>
 
                 {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-6 px-8 py-8">
+                <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6 px-8 py-8">
 
                     {/* First name + Last name */}
                     <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
@@ -337,17 +402,53 @@ function Register() {
                         </p>)}
                     </div>
 
+
+                    {/* Confirm password */}
+                    <div>
+                        <label htmlFor="confirmPassword" className={labelClass}>Confirm password</label>
+                        <input
+                            id="confirmPassword"
+                            type="password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className={inputClass}
+                            onBlur={() => setErrors({ ...errors, confirmPassword: validateConfirmPassword(confirmPassword, password) })}
+                        />
+                        {errors.confirmPassword && <p className="mt-1.5 text-xs text-red-500">{errors.confirmPassword}</p>}
+                    </div>
+
+
+                    {/* Phone */}
+                    <div>
+                        <label htmlFor="phone" className={labelClass}>Phone</label>
+                        <input
+                            id="phone"
+                            type="text"
+                            placeholder="+94771234567"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            className={inputClass}
+                            onBlur={() => setErrors({ ...errors, phone: validatePhone(phone) })}
+                        />
+                        {errors.phone && <p className="mt-1.5 text-xs text-red-500">{errors.phone}</p>}
+                    </div>
+
                     {/* Register button */}
-                    <button onClick={handleSubmit}
+
+                    {apiError && (
+                        <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{apiError}</p>
+                    )}
+                    <button
+                        disabled={loading}
                         type="submit"
                         className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700 focus:outline-none focus-visible:ring-4 focus-visible:ring-indigo-600/30 active:bg-indigo-800"
                     >
-                        Register
+                        {loading ? "Please wait..." : "Register"}
                     </button>
 
                     <p className="text-center text-sm text-slate-500 py-5">
                         Already have an account?{' '}
-                        <a href="/Login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                        <a href="/" className="font-medium text-indigo-600 hover:text-indigo-500">
                             Sign in
                         </a>
                     </p>
