@@ -1,11 +1,15 @@
 import { useState } from 'react'
 import { useNavigate } from "react-router-dom";
 
+
+
 const labelClass = 'mb-1.5 block text-sm font-medium text-slate-700'
 const inputClass =
     'w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 ' +
     'placeholder:text-slate-400 shadow-sm transition ' +
     'focus:border-indigo-600 focus:outline-none focus:ring-4 focus:ring-indigo-600/15'
+
+
 
 function Register() {
 
@@ -29,19 +33,18 @@ function Register() {
             password: validatepassword(password)
 
         };
-
         setErrors(newErrors);
-
         // Error ekak hari thiyenawa nam stop
         const hasError = Object.values(newErrors).some((msg) => msg !== "");
         if (hasError) {
             return;
         }
 
-        localStorage.setItem("user", JSON.stringify({ name: firstName + " " + lastName, email: email }));
-        navigate("/Home");
+        localStorage.setItem("user", JSON.stringify({ name: firstName + " " + lastName, email: email, password: password }));
+        navigate("/Login");
     }
 
+    //errors show karanna space ekak hadanawa meken 
     const [errors, setErrors] = useState({
         firstName: "",
         lastName: "",
@@ -51,6 +54,7 @@ function Register() {
         nic: "",
         password: ""
     })
+
 
     const validateFirstname = (value: string) => {
         if (value.trim() === "") {
@@ -69,13 +73,28 @@ function Register() {
     }
 
     const validateDob = (value: string) => {
-        if (value.trim() === "") {
-            return "Date of birth is empty";
-        } else if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-            return "Invalid date format. Please use YYYY-MM-DD.";
-        } return "";
-    }
+        if (value === "") {
+            return "Date of birth is required";
+        }
 
+        const birth = new Date(value);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // welawa ain karala dawasa witharai ganna
+
+        // Rule 1: past date ekak wenna ona
+        if (birth >= today) {
+            return "Date of birth must be a past date";
+        }
+
+        // Rule 2: age eka 100 ta wadi nowenna ona
+        const hundredYearsAgo = new Date(today);
+        hundredYearsAgo.setFullYear(today.getFullYear() - 100);
+        if (birth < hundredYearsAgo) {
+            return "Age cannot be more than 100 years";
+        }
+
+        return "";
+    };
     const validatemail = (value: string) => {
 
         if (value.trimEnd() === "") {
@@ -325,6 +344,13 @@ function Register() {
                     >
                         Register
                     </button>
+
+                    <p className="text-center text-sm text-slate-500 py-5">
+                        Already have an account?{' '}
+                        <a href="/Login" className="font-medium text-indigo-600 hover:text-indigo-500">
+                            Sign in
+                        </a>
+                    </p>
                 </form>
             </div>
         </div>
